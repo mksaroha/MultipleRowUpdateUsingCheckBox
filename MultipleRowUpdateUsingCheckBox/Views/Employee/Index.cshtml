@@ -1,0 +1,218 @@
+﻿@model MultipleRowUpdateUsingCheckBox.ViewModel.EmployeeViewModel
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<br />
+<h2 style="text-align:center;color:palevioletred"><u>Employee Data</u></h2>
+<br />
+
+@*<div><button id="btnsearch">Employee By Name</button> <input id="txtsearch" /></div>*@
+
+@using (Html.BeginForm("Index", "Employee", FormMethod.Get))
+{   
+    <b>Search Option:</b>@Html.RadioButton("option", "Name") <text>Name</text> @Html.RadioButton("option", "City") <text>City</text>
+    @Html.TextBox("search") <input type = "submit" name="submit" value = "Search" />
+}
+
+<br />
+
+<table id="tblEmployee" class="table table-bordered table-striped table-condensed">
+    <thead>
+        <tr>
+            <th>S.NO</th>
+            <th>Name</th>
+            <th>Salary</th>
+            <th>City</th>
+            <th>Department</th>
+            <th>Action</th>
+        </tr>
+    </thead>   
+<tbody>
+    @foreach (var item in Model.EmployeeList)
+    {
+        <tr>
+            <td><input type="checkbox" value="@item.Id" /></td>
+            <td><input type="text" value="@item.Name"/></td>
+            <td><input type="text" value="@item.Salary"/></td>
+            <td><input type="text" value="@item.City"/></td>
+            <td>@Html.DropDownListFor(x => x.Employee.DepartmentId, new SelectList(Model.DepartmentList, "DepartmentId", "DepartmentName", item.DepartmentId), new { @class = "form-control" })</td>
+            <td><input type="button" onclick="DeleteData(@item.Id)" class="btn btn-danger" value="Delete"/></td>
+        </tr>
+    }
+</tbody>
+    <tfoot>  
+        <tr>
+            <td colspan="3"><input id="btnGet" type="submit" value="Update" class="btn btn-primary"/></td>
+            <td colspan="2"><button type="button" class="btn btn-info" data-toggle="modal" data-target="#myModal">New Employee</button></td>
+        </tr>    
+</tfoot>
+</table>
+
+<div id="myModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">New Employee</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row">
+                        <div class="form-group">
+                            @Html.LabelFor(x => x.Employee.Name)
+                            @Html.TextBoxFor(x => x.Employee.Name, new { @class = "form-control" })
+                        </div>
+                        <div class="form-group">
+                            @Html.LabelFor(x => x.Employee.Salary)
+                            @Html.TextBoxFor(x => x.Employee.Salary, new { @class = "form-control" })
+                        </div>
+                        <div class="form-group">
+                            @Html.LabelFor(x => x.Employee.City)
+                            @Html.TextBoxFor(x => x.Employee.City, new { @class = "form-control" })
+                        </div>
+                        <div class="form-group">
+                            @Html.LabelFor(x => x.Employee.DepartmentId)
+                            @Html.DropDownListFor(x => x.Employee.DepartmentId, new SelectList(Model.DepartmentList, "DepartmentId", "DepartmentName"), new { @class = "form-control" })
+                        </div>
+                        <input type="submit" value="Save" onclick="SaveData()" class="btn btn-success" />
+                    </div>
+                </form> 
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section scripts{
+<script src="~/Scripts/paginathing.js"></script>
+    <script>
+        var employees = [];
+        $("#btnGet").click(function () {
+            //$("#tbl TBODY TR").each(function () {
+            $("#tblEmployee input[type=checkbox]:checked").each(function () {
+                //var row = $(this);
+                var row = $(this).closest("tr");
+                var employee = {};
+                //employee.Id = row.find("TD").eq(0).html();
+                //course.courseName = row.find("TD").eq(1).html();
+                //course.BatchNo = row.find("TD").eq(2).html();
+                employee.Id = row.find("td:eq(0) input[type='checkbox']").val();
+                employee.Name = row.find("td:eq(1) input[type='text']").val();
+                employee.Salary = row.find("td:eq(2) input[type='text']").val();
+                employee.City = row.find("td:eq(3) input[type='text']").val();
+                employee.DepartmentId = row.find(":selected").val();
+                employees.push(employee);
+            })
+            console.log(employees);
+
+            $.ajax({
+                url: '/Employee/Update',
+                type: 'post',
+                //data: { courseId: id, courseName: name, BatchNo: batch },
+                data: JSON.stringify(employees),
+                contentType: "application/json; charset=utf-8",
+                //dataType: "json",
+                success: function (p) {
+                    location.reload(true);
+                    alert('Record Insert/Update Successfully!!!');
+                    BindData();
+                },
+                error: function () {
+                    alert('Record not Inserted!!!');
+                }
+            });
+        });
+
+        function SaveData()
+        {
+            var data = $('form').serialize();           
+            $.ajax({
+                url: '/Employee/SaveEmployee',
+                type: 'post',
+                //data: { Name: $("#Employee_Name").val(), Salary: $("#Employee_Salary").val(), City: $("#Employee_City").val(), DepartmentId: $("#Employee_DepartmentId").val() },
+                data: data,
+                success: function () {
+                    location.reload(true);
+                    alert('Record Saved Successfully!');
+                },
+                error: function () {
+                    alert('Record not Saved!');
+                }
+            });
+        }
+
+
+        function DeleteData(id) {
+            if (confirm("Are you sure...?")) {
+                $.ajax({
+                    url: '/Employee/Delete',
+                    type: 'post',
+                    data: { Id: id },
+                    success: function () {
+                        location.reload(true);
+                        alert('Record Deleted Successfully!');
+                    },
+                    error: function () {
+                        alert('Record not Deleted!');
+                    }
+                });
+            }
+            return false;
+        }
+
+
+        $('.table tbody').paginathing({
+            perPage: 5,
+            insertAfter: '.table',
+            pageNumbers: true
+        });
+        
+        //$('#btnsearch').click(function () {
+        //    $.ajax({
+        //        url: '/Employee/Search',
+        //        type: 'GET',
+        //        data: { Name: $("#txtsearch").val() },
+        //        success: function (p) {
+        //            $('#tblEmployee').find('tr:gt(0)').remove();
+        //            for (var i = 0; i < p.length; i++) {
+        //                $("#tblEmployee").append('<tr> <td>' + p[i].Id + '</td>  <td>' + p[i].Name + '</td>  <td>' + p[i].Salary + '</td> <td>' + p[i].City + '</td> <td>' + p[i].Department.DepartmentName + '</td> <td><input type="button" value="Delete" onclick="DeleteData(' + p[i].Id + ')"></td> </tr>');
+        //            }
+        //        },
+        //        error: function () {
+        //            alert('Record not found');
+        //        }
+        //    })
+        //});
+  
+
+
+        //var KKK = 0;
+        //$("#tbl").on('click', '.btnSelect', function () {
+        //    $("#btnsave").val("Update");
+        //    KKK = $(this).closest('tr').children("td:eq(0)").text();
+        //    $("#txtcname").val($(this).closest('tr').children("td:eq(1)").text());
+        //    $("#txtbatch").val($(this).closest('tr').children("td:eq(2)").text());
+        //});
+
+
+        //on each method it is not working
+        //$("#tbl").on('click', '.btnSelect', function () {
+        //    // get the current row
+        //    var currentRow = $(this).closest("tr");
+
+        //    var col1 = currentRow.find("td:eq(0)").text();
+        //    var col2 = currentRow.find("td:eq(1) input[type='text']").val();
+        //    var col3 = currentRow.find("td:eq(2) input[type='text']").val();
+        //    var data = col1 + "\n" + col2 + "\n" + col3;
+
+        //    alert(data);
+        //});
+    </script>
+    }
